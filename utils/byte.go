@@ -1,6 +1,9 @@
 package utils
 
-import "errors"
+import (
+	"crypto/rand"
+	"errors"
+)
 
 func ToByteFixedSize(data []byte, size int) error {
 	if len(data) > size {
@@ -15,4 +18,10 @@ func ToByteFixedSize(data []byte, size int) error {
 	data = append(data, bytesToAdd...)
 
 	return nil
+}
+
+func CreateNonce(size int) ([]byte, error) {
+	bytes := make([]byte, size)
+	_, err := rand.Read(bytes)
+	return bytes, err
 }
