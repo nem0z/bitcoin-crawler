@@ -5,27 +5,26 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/nem0z/bitcoin-crawler/message"
 )
 
-const defaultTime = 5 * time.Second
-
 type Peer struct {
-	ip   string
-	port int
-	conn net.Conn
+	ip       string
+	port     int
+	conn     net.Conn
+	handlers Handlers
 }
 
 // Create the net.coon with the peer
 func Create(ip string, port int) (*Peer, error) {
-	conn, err := net.DialTimeout("tcp6", fmt.Sprintf("[%v]:%v", ip, port), defaultTime)
-	return &Peer{ip, port, conn}, err
+	conn, err := net.Dial("tcp6", fmt.Sprintf("[%v]:%v", ip, port))
+	return &Peer{ip, port, conn, Handlers{}}, err
 }
 
 // Init the connection with the peer by sending version and verack message
 func (peer *Peer) Init() error {
+	go peer.Handle()
 
 	if err := peer.Version(); err != nil {
 		return err
