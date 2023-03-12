@@ -21,12 +21,16 @@ func (peer *Peer) Handle() {
 		if err == io.EOF {
 			continue
 		}
-		utils.Handle(err)
+
+		if err != nil {
+			peer.Close()
+			break
+		}
 
 		command := string(utils.RemoveTrailingZeros(msg.Command))
 		handler, ok := peer.handlers[command]
 		if ok {
-			handler(peer, msg)
+			go handler(peer, msg)
 			continue
 		}
 
