@@ -1,36 +1,40 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/nem0z/bitcoin-crawler/peer"
+	"github.com/nem0z/bitcoin-crawler/peer/handlers"
 	"github.com/nem0z/bitcoin-crawler/utils"
 )
 
 func main() {
-	//peerIp := "2a02:8108:8ac0:207b:d250:99ff:fe9e:792a"
-	peerIp := "2a01:04f8:0201:2383:0000:0000:0000:0002"
+	peerIp := "2a00:8a60:e012:a00::21"
 	peerPort := 8333
 
-	peer, err := peer.Create(peerIp, peerPort)
+	chVersion := make(chan *peer.Info)
+	chAddr := make(chan []*peer.Addr)
+
+	p, err := peer.Create(peerIp, peerPort)
 	utils.Handle(err)
 
-	err = peer.Init()
+	p.Register("version", handlers.Version(chVersion))
+	p.Register("addr", handlers.Addr(chAddr))
+
+	err = p.Init()
 	utils.Handle(err)
 
-	err = peer.GetAddr()
+	err = p.GetAddr()
 	utils.Handle(err)
 
-	err = peer.Mempool()
-	utils.Handle(err)
+	for {
+		select {
 
-	for i := 0; i < 15; i++ {
-		msg, err := peer.Read()
-		if err != nil {
-			log.Fatal(err)
-			break
+		case info := <-chVersion:
+			fmt.Println("Version received :", info)
+
+		case addrs := <-chAddr:
+			fmt.Println("Addr received :", len(addrs))
 		}
-		msg.Display()
 	}
-
 }
