@@ -10,22 +10,43 @@ import (
 	"github.com/nem0z/bitcoin-crawler/message"
 )
 
-const defaultTime = 5 * time.Second
+type Info struct {
+	Version  int32
+	Services uint64
+	Relay    bool
+}
+
+type Addr struct {
+	Ip   string
+	Port int
+}
 
 type Peer struct {
-	ip   string
-	port int
-	conn net.Conn
+	ip       string
+	port     int
+	conn     net.Conn
+	handlers Handlers
+	Info     *Info
 }
 
 // Create the net.coon with the peer
 func Create(ip string, port int) (*Peer, error) {
-	conn, err := net.DialTimeout("tcp6", fmt.Sprintf("[%v]:%v", ip, port), defaultTime)
-	return &Peer{ip, port, conn}, err
+	var err error
+	var conn net.Conn
+
+	netIp := net.ParseIP(ip)
+	if netIp.To4() == nil {
+		conn, err = net.DialTimeout("tcp6", fmt.Sprintf("[%v]:%v", ip, port), time.Second*3)
+	} else {
+		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", ip, port), time.Second*3)
+	}
+
+	return &Peer{ip, port, conn, Handlers{}, &Info{}}, err
 }
 
 // Init the connection with the peer by sending version and verack message
 func (peer *Peer) Init() error {
+	go peer.Handle()
 
 	if err := peer.Version(); err != nil {
 		return err
@@ -85,4 +106,8 @@ func (peer *Peer) Read() (*message.Message, error) {
 		Checksum: checksum,
 		Payload:  payload,
 	}, err
+}
+
+func (peer *Peer) SelfAddr() *Addr {
+	return &Addr{peer.ip, peer.port}
 }

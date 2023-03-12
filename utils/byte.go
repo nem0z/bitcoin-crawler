@@ -20,6 +20,15 @@ func ToByteFixedSize(data []byte, size int) error {
 	return nil
 }
 
+func RemoveTrailingZeros(data []byte) []byte {
+	for i := len(data) - 1; i >= 0; i-- {
+		if data[i] != 0 {
+			return data[:i+1]
+		}
+	}
+	return []byte{}
+}
+
 func CreateNonce(size int) ([]byte, error) {
 	bytes := make([]byte, size)
 	_, err := rand.Read(bytes)
