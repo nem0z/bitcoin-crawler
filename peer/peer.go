@@ -9,11 +9,23 @@ import (
 	"github.com/nem0z/bitcoin-crawler/message"
 )
 
+type Info struct {
+	Version  int32
+	Services uint64
+	Relay    bool
+}
+
+type Addr struct {
+	Ip   string
+	Port int
+}
+
 type Peer struct {
 	ip       string
 	port     int
 	conn     net.Conn
 	handlers Handlers
+	Info     *Info
 }
 
 // Create the net.coon with the peer
