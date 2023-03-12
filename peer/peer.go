@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/nem0z/bitcoin-crawler/message"
 )
@@ -30,8 +31,17 @@ type Peer struct {
 
 // Create the net.coon with the peer
 func Create(ip string, port int) (*Peer, error) {
-	conn, err := net.Dial("tcp6", fmt.Sprintf("[%v]:%v", ip, port))
-	return &Peer{ip, port, conn, Handlers{}}, err
+	var err error
+	var conn net.Conn
+
+	netIp := net.ParseIP(ip)
+	if netIp.To4() == nil {
+		conn, err = net.DialTimeout("tcp6", fmt.Sprintf("[%v]:%v", ip, port), time.Second*3)
+	} else {
+		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", ip, port), time.Second*3)
+	}
+
+	return &Peer{ip, port, conn, Handlers{}, &Info{}}, err
 }
 
 // Init the connection with the peer by sending version and verack message
@@ -96,4 +106,8 @@ func (peer *Peer) Read() (*message.Message, error) {
 		Checksum: checksum,
 		Payload:  payload,
 	}, err
+}
+
+func (peer *Peer) SelfAddr() *Addr {
+	return &Addr{peer.ip, peer.port}
 }
