@@ -15,8 +15,15 @@ func Version(ch chan *peer.Info) peer.Handler {
 
 		if version >= 70001 {
 			relay = msg.Payload[len(msg.Payload)-1] != 0
+		}
+
+		p.Info = &peer.Info{Version: version, Services: services, Relay: relay}
+		ch <- p.Info
+	}
 }
 
-func Addr(peer *peer.Peer, msg *message.Message) {
-	fmt.Println("Deal with version", len(msg.Payload))
+func Addr(ch chan []*peer.Addr) peer.Handler {
+	return func(p *peer.Peer, msg *message.Message) {
+		ch <- ParseListAddr(msg.Payload)
+	}
 }
