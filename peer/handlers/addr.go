@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/binary"
 	"net"
 
@@ -19,6 +20,12 @@ func ParseListAddr(payload []byte) []*peer.Addr {
 	addrs := make([]*peer.Addr, (len(payload)-n)/30)
 
 	for i := range addrs {
+		if bytes.Equal(payload[i*30+n:30*(i+1)+n], make([]byte, 30)) {
+			if i <= 1 {
+				return []*peer.Addr{}
+			}
+			return addrs[:i-1]
+		}
 		addrs[i] = ParseAddr(payload[i*30+n : 30*(i+1)+n])
 	}
 
