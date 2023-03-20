@@ -2,7 +2,6 @@ package peer
 
 import (
 	"io"
-	"log"
 
 	"github.com/nem0z/bitcoin-crawler/message"
 	"github.com/nem0z/bitcoin-crawler/utils"
@@ -24,16 +23,14 @@ func (peer *Peer) Handle() {
 
 		if err != nil {
 			peer.Close()
-			break
+			return
 		}
 
 		command := string(utils.RemoveTrailingZeros(msg.Command))
 		handler, ok := peer.handlers[command]
 		if ok {
-			go handler(peer, msg)
+			handler(peer, msg)
 			continue
 		}
-
-		log.Printf("Ignored message of type %s", string(msg.Command))
 	}
 }
