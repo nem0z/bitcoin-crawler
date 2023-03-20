@@ -25,10 +25,12 @@ func (peer *Peer) Verack() error {
 	return peer.Send(verack.ToByte())
 }
 
-func (peer *Peer) Ping() error {
-	nonce, err := utils.CreateNonce(8)
-	if err != nil {
-		return err
+func (peer *Peer) Ping(nonce []byte) (err error) {
+	if nonce == nil {
+		nonce, err = utils.CreateNonce(8)
+		if err != nil {
+			return err
+		}
 	}
 
 	ping, err := message.Create("ping", nonce)
