@@ -25,23 +25,25 @@ type Peer struct {
 	ip       string
 	port     int
 	conn     net.Conn
+	stop     chan bool
 	handlers Handlers
 	Info     *Info
 }
 
 // Create the net.coon with the peer
-func Create(ip string, port int) (*Peer, error) {
+func Create(ip string, port int, stop chan bool) (*Peer, error) {
 	var err error
 	var conn net.Conn
+	timeout := time.Second * 5
 
 	netIp := net.ParseIP(ip)
 	if netIp.To4() == nil {
-		conn, err = net.DialTimeout("tcp6", fmt.Sprintf("[%v]:%v", ip, port), time.Second*3)
+		conn, err = net.DialTimeout("tcp6", fmt.Sprintf("[%v]:%v", ip, port), timeout)
 	} else {
-		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", ip, port), time.Second*3)
+		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", ip, port), timeout)
 	}
 
-	return &Peer{ip, port, conn, Handlers{}, &Info{}}, err
+	return &Peer{ip, port, conn, stop, Handlers{}, &Info{}}, err
 }
 
 // Init the connection with the peer by sending version and verack message
@@ -61,7 +63,9 @@ func (peer *Peer) Init() error {
 
 // Close the conn with the peer
 func (peer *Peer) Close() {
+	peer.stop <- false
 	peer.conn.Close()
+	peer = nil
 }
 
 // Send a message to the peer
@@ -108,6 +112,7 @@ func (peer *Peer) Read() (*message.Message, error) {
 	}, err
 }
 
+// Return Addr of himself (as ip and port are private)
 func (peer *Peer) SelfAddr() *Addr {
 	return &Addr{peer.ip, peer.port}
 }
