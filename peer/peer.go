@@ -79,6 +79,22 @@ func (peer *Peer) Send(msg *message.Message) error {
 	return nil
 }
 
+func (peer *Peer) Queue(msg *message.Message) {
+	peer.queue <- msg
+}
+
+func (peer *Peer) ConsumeQueue() {
+
+	go func() {
+		for msg := range peer.queue {
+			err := peer.Send(msg)
+			if err != nil {
+				log.Println("Consuming queue :", err)
+			}
+		}
+	}()
+}
+
 // Read a message from the conn
 func (peer *Peer) Read() (*message.Message, error) {
 	header := make([]byte, 24)
