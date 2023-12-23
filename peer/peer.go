@@ -65,17 +65,23 @@ func (peer *Peer) Close() {
 }
 
 // Send a message to the peer
-func (peer *Peer) Send(message []byte) error {
-	n, err := peer.conn.Write(message)
+func (peer *Peer) Send(msg *message.Message) error {
+	if !msg.IsValid() {
+		return errors.New("Trying to send an invalid message")
+	}
+
+	msgData := msg.MarshalMessage()
+	n, err := peer.conn.Write(msgData)
 
 	if err != nil {
 		return err
 	}
 
-	if n != len(message) {
+	if n != len(msgData) {
 		return errors.New("Wrong number of bytes sent")
 	}
 
+	log.Println("Sending message :", string(msg.Command))
 	return nil
 }
 
