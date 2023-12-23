@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"time"
 
@@ -22,15 +23,20 @@ type Addr struct {
 }
 
 type Peer struct {
-	ip       string
-	port     int
-	conn     net.Conn
-	handlers Handlers
-	Info     *Info
+	ip        string
+	port      int
+	conn      net.Conn
+	handlers  Handlers
+	Info      *Info
+	Addrs     []*Addr
+	PingNonce []byte
+	PingAt    time.Time
+	PongAt    time.Time
+	queue     chan *message.Message
 }
 
 // Create the net.coon with the peer
-func Create(ip string, port int) (*Peer, error) {
+func New(ip string, port int) (*Peer, error) {
 	var err error
 	var conn net.Conn
 
@@ -41,42 +47,53 @@ func Create(ip string, port int) (*Peer, error) {
 		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", ip, port), time.Second*3)
 	}
 
-	return &Peer{ip, port, conn, Handlers{}, &Info{}}, err
+	ch := make(chan *message.Message)
+
+	peer := &Peer{ip, port, conn, Handlers{}, nil, []*Addr{}, nil, time.Time{}, time.Time{}, ch}
+	peer.start()
+
+	return peer, err
 }
 
-// Init the connection with the peer by sending version and verack message
-func (peer *Peer) Init() error {
+func (peer *Peer) start() {
 	go peer.Handle()
-
-	if err := peer.Version(); err != nil {
-		return err
-	}
-
-	if err := peer.Verack(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Close the conn with the peer
-func (peer *Peer) Close() {
-	peer.conn.Close()
 }
 
 // Send a message to the peer
-func (peer *Peer) Send(message []byte) error {
-	n, err := peer.conn.Write(message)
+func (peer *Peer) Send(msg *message.Message) error {
+	if !msg.IsValid() {
+		return errors.New("Trying to send an invalid message")
+	}
+
+	msgData := msg.MarshalMessage()
+	n, err := peer.conn.Write(msgData)
 
 	if err != nil {
 		return err
 	}
 
-	if n != len(message) {
+	if n != len(msgData) {
 		return errors.New("Wrong number of bytes sent")
 	}
 
+	log.Println("Sending message :", string(msg.Command))
 	return nil
+}
+
+func (peer *Peer) Queue(msg *message.Message) {
+	peer.queue <- msg
+}
+
+func (peer *Peer) ConsumeQueue() {
+
+	go func() {
+		for msg := range peer.queue {
+			err := peer.Send(msg)
+			if err != nil {
+				log.Println("Consuming queue :", err)
+			}
+		}
+	}()
 }
 
 // Read a message from the conn
@@ -90,13 +107,27 @@ func (peer *Peer) Read() (*message.Message, error) {
 	magic := header[:4]
 	command := header[4:16]
 	length := header[16:20]
-	lenghtValue := binary.LittleEndian.Uint32(length)
+	lengthValue := binary.LittleEndian.Uint32(length)
 	checksum := header[20:24]
 
-	payload := make([]byte, lenghtValue)
+	payload := make([]byte, lengthValue)
 
-	if lenghtValue > 0 {
-		_, err = peer.conn.Read(payload)
+	if lengthValue > 0 {
+
+		totalRead := uint32(0)
+
+		for totalRead < lengthValue {
+
+			n, err := peer.conn.Read(payload[totalRead:])
+			if err != nil {
+				return nil, err
+			}
+
+			totalRead += uint32(n)
+			if n == 0 {
+				return nil, errors.New("Read message : No more byte to read")
+			}
+		}
 	}
 
 	return &message.Message{
@@ -108,6 +139,20 @@ func (peer *Peer) Read() (*message.Message, error) {
 	}, err
 }
 
-func (peer *Peer) SelfAddr() *Addr {
+func (peer *Peer) Display() {
+	fmt.Println("/-----*-----/")
+	fmt.Printf("Peer : %v:%v\n", peer.ip, peer.port)
+	fmt.Printf("Info : %v : %v : %v\n", peer.Info.Version, peer.Info.Services, peer.Info.Relay)
+	fmt.Println("Addrs : ", len(peer.Addrs))
+	fmt.Printf("Ping/Pong : %v => %v\n", peer.PingAt, peer.PongAt)
+	fmt.Printf("/-----*-----/\n\n")
+}
+
+func (peer *Peer) Addr() *Addr {
 	return &Addr{peer.ip, peer.port}
+}
+
+func (peer *Peer) Close() {
+	log.Println("Closing connection...")
+	peer.conn.Close()
 }

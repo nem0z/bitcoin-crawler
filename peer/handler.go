@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/nem0z/bitcoin-crawler/message"
-	"github.com/nem0z/bitcoin-crawler/utils"
 )
 
 type Handler func(peer *Peer, message *message.Message)
@@ -23,13 +22,14 @@ func (peer *Peer) Handle() {
 		}
 
 		if err != nil {
+			log.Println("Handling messages :", err)
 			peer.Close()
 			break
 		}
 
-		command := string(utils.RemoveTrailingZeros(msg.Command))
+		command := message.ResolveCommandName(msg.Command)
 		handler, ok := peer.handlers[command]
-		if ok {
+		if ok && msg.IsValid() {
 			go handler(peer, msg)
 			continue
 		}

@@ -3,13 +3,21 @@ package message
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/nem0z/bitcoin-crawler/utils"
 )
 
-const mainMagicNo = "f9beb4d9"
+var mainMagicNo = []byte{0xf9, 0xbe, 0xb4, 0xD9}
+
+var availableCommands = []string{
+	"version",
+	"verack",
+	"ping",
+	"pong",
+	"getaddr",
+	"mempool",
+}
 
 type Message struct {
 	MagicNo  []byte
@@ -19,7 +27,7 @@ type Message struct {
 	Payload  []byte
 }
 
-func Create(commandName string, payload []byte) (*Message, error) {
+func New(commandName string, payload []byte) (*Message, error) {
 	command, err := formatCommandName(commandName)
 	if err != nil {
 		return nil, err
@@ -29,20 +37,33 @@ func Create(commandName string, payload []byte) (*Message, error) {
 	binary.LittleEndian.PutUint32(length, uint32(len(payload)))
 
 	checksum := utils.Checksum(payload)
-	magicNo, err := hex.DecodeString(mainMagicNo)
-	if err != nil {
-		return nil, err
-	}
 
-	m := &Message{
-		magicNo,
+	return &Message{
+		mainMagicNo,
 		command,
 		length,
 		checksum,
 		payload,
-	}
+	}, nil
+}
 
-	return m, nil
+func (m *Message) IsValid() bool {
+	checksum := utils.Checksum(m.Payload)
+	length := binary.LittleEndian.Uint32(m.Length)
+
+	return bytes.Equal(m.MagicNo, mainMagicNo) &&
+		uint32(len(m.Payload)) == length &&
+		bytes.Equal(m.Checksum, checksum)
+}
+
+func (m *Message) MarshalMessage() []byte {
+	return bytes.Join([][]byte{
+		m.MagicNo,
+		m.Command,
+		m.Length,
+		m.Checksum,
+		m.Payload,
+	}, []byte{})
 }
 
 func (m *Message) Display() {
@@ -57,14 +78,4 @@ func (m *Message) Display() {
 	fmt.Printf("Checksum (%v) : %v\n", valid, m.Checksum)
 	fmt.Println("Payload length :", len(m.Payload))
 	fmt.Printf("*----------*\n\n")
-}
-
-func (m *Message) ToByte() []byte {
-	return bytes.Join([][]byte{
-		m.MagicNo,
-		m.Command,
-		m.Length,
-		m.Checksum,
-		m.Payload,
-	}, []byte{})
 }
