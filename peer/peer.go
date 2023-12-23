@@ -22,15 +22,20 @@ type Addr struct {
 }
 
 type Peer struct {
-	ip       string
-	port     int
-	conn     net.Conn
-	handlers Handlers
-	Info     *Info
+	ip        string
+	port      int
+	conn      net.Conn
+	handlers  Handlers
+	Info      *Info
+	Addrs     []*Addr
+	PingNonce []byte
+	PingAt    time.Time
+	PongAt    time.Time
+	queue     chan *message.Message
 }
 
 // Create the net.coon with the peer
-func Create(ip string, port int) (*Peer, error) {
+func New(ip string, port int) (*Peer, error) {
 	var err error
 	var conn net.Conn
 
@@ -41,27 +46,16 @@ func Create(ip string, port int) (*Peer, error) {
 		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", ip, port), time.Second*3)
 	}
 
-	return &Peer{ip, port, conn, Handlers{}, &Info{}}, err
+	ch := make(chan *message.Message)
+
+	peer := &Peer{ip, port, conn, Handlers{}, nil, []*Addr{}, nil, time.Time{}, time.Time{}, ch}
+	peer.start()
+
+	return peer, err
 }
 
-// Init the connection with the peer by sending version and verack message
-func (peer *Peer) Init() error {
+func (peer *Peer) start() {
 	go peer.Handle()
-
-	if err := peer.Version(); err != nil {
-		return err
-	}
-
-	if err := peer.Verack(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Close the conn with the peer
-func (peer *Peer) Close() {
-	peer.conn.Close()
 }
 
 // Send a message to the peer
