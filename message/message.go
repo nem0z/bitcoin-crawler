@@ -19,7 +19,7 @@ type Message struct {
 	Payload  []byte
 }
 
-func Create(commandName string, payload []byte) (*Message, error) {
+func New(commandName string, payload []byte) (*Message, error) {
 	command, err := formatCommandName(commandName)
 	if err != nil {
 		return nil, err
@@ -29,17 +29,16 @@ func Create(commandName string, payload []byte) (*Message, error) {
 	binary.LittleEndian.PutUint32(length, uint32(len(payload)))
 
 	checksum := utils.Checksum(payload)
-	magicNo, err := hex.DecodeString(mainMagicNo)
-	if err != nil {
-		return nil, err
-	}
 
-	m := &Message{
-		magicNo,
+	return &Message{
+		mainMagicNo,
 		command,
 		length,
 		checksum,
 		payload,
+	}, nil
+}
+
 func (m *Message) IsValid() bool {
 	checksum := utils.Checksum(m.Payload)
 	length := binary.LittleEndian.Uint32(m.Length)
