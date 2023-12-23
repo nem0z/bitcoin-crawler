@@ -1,28 +1,30 @@
 package peer
 
 import (
+	"time"
+
 	"github.com/nem0z/bitcoin-crawler/message"
 	"github.com/nem0z/bitcoin-crawler/message/payload"
 	"github.com/nem0z/bitcoin-crawler/utils"
 )
 
 func (peer *Peer) Version() error {
-	payload, err := payload.CreateVersion(peer.ip, peer.port)
-	version, err := message.Create("version", payload.ToByte())
+	payload, err := payload.NewVersion(peer.ip, peer.port)
+	msg, err := message.New("version", payload.ToByte())
 	if err != nil {
 		return err
 	}
 
-	return peer.Send(version.ToByte())
+	return peer.Send(msg)
 }
 
 func (peer *Peer) Verack() error {
-	verack, err := message.Create("verack", []byte{})
+	msg, err := message.New("verack", []byte{})
 	if err != nil {
 		return err
 	}
 
-	return peer.Send(verack.ToByte())
+	return peer.Send(msg)
 }
 
 func (peer *Peer) Ping() error {
@@ -31,28 +33,44 @@ func (peer *Peer) Ping() error {
 		return err
 	}
 
-	ping, err := message.Create("ping", nonce)
+	msg, err := message.New("ping", nonce)
 	if err != nil {
 		return err
 	}
 
-	return peer.Send(ping.ToByte())
+	peer.Queue(msg)
+	peer.PingAt = time.Now()
+	peer.PingNonce = nonce
+
+	return nil
+}
+
+func (peer *Peer) Pong(nonce []byte) error {
+	msg, err := message.New("pong", nonce)
+	if err != nil {
+		return err
+	}
+
+	peer.Queue(msg)
+	return nil
 }
 
 func (peer *Peer) GetAddr() error {
-	ping, err := message.Create("getaddr", []byte{})
+	msg, err := message.New("getaddr", []byte{})
 	if err != nil {
 		return err
 	}
 
-	return peer.Send(ping.ToByte())
+	peer.Queue(msg)
+	return nil
 }
 
 func (peer *Peer) Mempool() error {
-	ping, err := message.Create("mempool", []byte{})
+	msg, err := message.New("mempool", []byte{})
 	if err != nil {
 		return err
 	}
 
-	return peer.Send(ping.ToByte())
+	peer.Queue(msg)
+	return nil
 }
