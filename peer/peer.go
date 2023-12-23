@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"time"
 
@@ -138,6 +139,20 @@ func (peer *Peer) Read() (*message.Message, error) {
 	}, err
 }
 
-func (peer *Peer) SelfAddr() *Addr {
+func (peer *Peer) Display() {
+	fmt.Println("/-----*-----/")
+	fmt.Printf("Peer : %v:%v\n", peer.ip, peer.port)
+	fmt.Printf("Info : %v : %v : %v\n", peer.Info.Version, peer.Info.Services, peer.Info.Relay)
+	fmt.Println("Addrs : ", len(peer.Addrs))
+	fmt.Printf("Ping/Pong : %v => %v\n", peer.PingAt, peer.PongAt)
+	fmt.Printf("/-----*-----/\n\n")
+}
+
+func (peer *Peer) Addr() *Addr {
 	return &Addr{peer.ip, peer.port}
+}
+
+func (peer *Peer) Close() {
+	log.Println("Closing connection...")
+	peer.conn.Close()
 }
