@@ -90,13 +90,27 @@ func (peer *Peer) Read() (*message.Message, error) {
 	magic := header[:4]
 	command := header[4:16]
 	length := header[16:20]
-	lenghtValue := binary.LittleEndian.Uint32(length)
+	lengthValue := binary.LittleEndian.Uint32(length)
 	checksum := header[20:24]
 
-	payload := make([]byte, lenghtValue)
+	payload := make([]byte, lengthValue)
 
-	if lenghtValue > 0 {
-		_, err = peer.conn.Read(payload)
+	if lengthValue > 0 {
+
+		totalRead := uint32(0)
+
+		for totalRead < lengthValue {
+
+			n, err := peer.conn.Read(payload[totalRead:])
+			if err != nil {
+				return nil, err
+			}
+
+			totalRead += uint32(n)
+			if n == 0 {
+				return nil, errors.New("Read message : No more byte to read")
+			}
+		}
 	}
 
 	return &message.Message{
