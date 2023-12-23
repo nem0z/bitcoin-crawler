@@ -9,7 +9,16 @@ import (
 	"github.com/nem0z/bitcoin-crawler/utils"
 )
 
-const mainMagicNo = "f9beb4d9"
+var mainMagicNo = []byte{0xf9, 0xbe, 0xb4, 0xD9}
+
+var availableCommands = []string{
+	"version",
+	"verack",
+	"ping",
+	"pong",
+	"getaddr",
+	"mempool",
+}
 
 type Message struct {
 	MagicNo  []byte
