@@ -3,7 +3,6 @@ package message
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/nem0z/bitcoin-crawler/utils"
@@ -57,6 +56,14 @@ func (m *Message) IsValid() bool {
 		bytes.Equal(m.Checksum, checksum)
 }
 
+func (m *Message) MarshalMessage() []byte {
+	return bytes.Join([][]byte{
+		m.MagicNo,
+		m.Command,
+		m.Length,
+		m.Checksum,
+		m.Payload,
+	}, []byte{})
 }
 
 func (m *Message) Display() {
@@ -71,14 +78,4 @@ func (m *Message) Display() {
 	fmt.Printf("Checksum (%v) : %v\n", valid, m.Checksum)
 	fmt.Println("Payload length :", len(m.Payload))
 	fmt.Printf("*----------*\n\n")
-}
-
-func (m *Message) ToByte() []byte {
-	return bytes.Join([][]byte{
-		m.MagicNo,
-		m.Command,
-		m.Length,
-		m.Checksum,
-		m.Payload,
-	}, []byte{})
 }
