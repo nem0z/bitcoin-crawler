@@ -1,13 +1,17 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/binary"
+	"fmt"
+	"time"
 
 	"github.com/nem0z/bitcoin-crawler/message"
+	"github.com/nem0z/bitcoin-crawler/message/payload"
 	"github.com/nem0z/bitcoin-crawler/peer"
 )
 
-func Version(ch chan *peer.Info) peer.Handler {
+func Version() peer.Handler {
 	return func(p *peer.Peer, msg *message.Message) {
 		version := int32(binary.LittleEndian.Uint32(msg.Payload[:4]))
 		services := binary.LittleEndian.Uint64(msg.Payload[4:12])
@@ -18,12 +22,36 @@ func Version(ch chan *peer.Info) peer.Handler {
 		}
 
 		p.Info = &peer.Info{Version: version, Services: services, Relay: relay}
-		ch <- p.Info
 	}
 }
 
-func Addr(ch chan []*peer.Addr) peer.Handler {
+func Verack() peer.Handler {
 	return func(p *peer.Peer, msg *message.Message) {
-		ch <- ParseListAddr(msg.Payload)
+		p.ConsumeQueue()
+	}
+}
+
+func Addr() peer.Handler {
+	return func(p *peer.Peer, msg *message.Message) {
+		if msg.IsValid() {
+			addrs := payload.ParseAddr(msg.Payload)
+			for _, addr := range addrs {
+				fmt.Println(addr)
+			}
+		}
+	}
+}
+
+func Ping() peer.Handler {
+	return func(p *peer.Peer, msg *message.Message) {
+		p.Pong(msg.Payload)
+	}
+}
+
+func Pong() peer.Handler {
+	return func(p *peer.Peer, msg *message.Message) {
+		if bytes.Equal(msg.Payload, p.PingNonce) {
+			p.PongAt = time.Now()
+		}
 	}
 }
