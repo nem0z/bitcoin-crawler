@@ -40,9 +40,15 @@ func Create(commandName string, payload []byte) (*Message, error) {
 		length,
 		checksum,
 		payload,
-	}
+func (m *Message) IsValid() bool {
+	checksum := utils.Checksum(m.Payload)
+	length := binary.LittleEndian.Uint32(m.Length)
 
-	return m, nil
+	return bytes.Equal(m.MagicNo, mainMagicNo) &&
+		uint32(len(m.Payload)) == length &&
+		bytes.Equal(m.Checksum, checksum)
+}
+
 }
 
 func (m *Message) Display() {
