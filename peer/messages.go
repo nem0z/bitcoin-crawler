@@ -39,6 +39,7 @@ func (peer *Peer) Ping() error {
 	}
 
 	peer.Queue(msg)
+
 	peer.PingAt = time.Now()
 	peer.PingNonce = nonce
 
