@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"time"
 
@@ -22,6 +21,10 @@ type Addr struct {
 	Port int
 }
 
+func (addr *Addr) String() string {
+	return fmt.Sprintf("%v:%v", addr.Ip, addr.Port)
+}
+
 type Peer struct {
 	ip        string
 	port      int
@@ -33,10 +36,11 @@ type Peer struct {
 	PingAt    time.Time
 	PongAt    time.Time
 	queue     chan *message.Message
+	onClose   chan *Node
 }
 
 // Create the net.coon with the peer
-func New(ip string, port int) (*Peer, error) {
+func New(ip string, port int, onClose chan *Node) (*Peer, error) {
 	var err error
 	var conn net.Conn
 
@@ -47,16 +51,40 @@ func New(ip string, port int) (*Peer, error) {
 		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", ip, port), time.Second*3)
 	}
 
-	ch := make(chan *message.Message)
+	if err != nil {
+		return nil, err
+	}
 
-	peer := &Peer{ip, port, conn, Handlers{}, nil, []*Addr{}, nil, time.Time{}, time.Time{}, ch}
-	peer.start()
+	queue := make(chan *message.Message, 100)
 
-	return peer, err
+	return &Peer{
+		ip: ip, port: port, conn: conn, handlers: Handlers{}, queue: queue, onClose: onClose,
+	}, nil
 }
 
-func (peer *Peer) start() {
+func (peer *Peer) Start() error {
+	err := peer.Version()
+	if err != nil {
+		return err
+	}
+
+	err = peer.Verack()
+	if err != nil {
+		return err
+	}
+
+	err = peer.Ping()
+	if err != nil {
+		return err
+	}
+
+	err = peer.GetAddr()
+	if err != nil {
+		return err
+	}
+
 	go peer.Handle()
+	return nil
 }
 
 // Send a message to the peer
@@ -76,7 +104,7 @@ func (peer *Peer) Send(msg *message.Message) error {
 		return errors.New("Wrong number of bytes sent")
 	}
 
-	log.Println("Sending message :", string(msg.Command))
+	// log.Println("Send message :", string(msg.Command))
 	return nil
 }
 
@@ -90,7 +118,7 @@ func (peer *Peer) ConsumeQueue() {
 		for msg := range peer.queue {
 			err := peer.Send(msg)
 			if err != nil {
-				log.Println("Consuming queue :", err)
+				// log.Println("Consuming queue :", err)
 			}
 		}
 	}()
@@ -153,6 +181,19 @@ func (peer *Peer) Addr() *Addr {
 }
 
 func (peer *Peer) Close() {
-	log.Println("Closing connection...")
+	// log.Printf("[%s] Closing connection...\n", peer.Addr())
+	if peer.conn == nil {
+		return
+	}
+
+	node := &Node{
+		time.Now(),
+		peer.Info,
+		peer.Addr(),
+		peer.PongAt.Sub(peer.PingAt) > 0,
+	}
+
+	peer.onClose <- node
+
 	peer.conn.Close()
 }
