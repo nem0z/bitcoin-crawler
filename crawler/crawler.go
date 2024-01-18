@@ -3,7 +3,6 @@ package crawler
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	chandlers "github.com/nem0z/bitcoin-crawler/crawler/handlers"
 	"github.com/nem0z/bitcoin-crawler/peer"
@@ -19,7 +18,7 @@ type Crawler struct {
 
 func New(ip string, port int) (*Crawler, error) {
 	nodes := map[string]*peer.Node{}
-	chOut := make(chan *peer.Node)
+	chOut := make(chan *peer.Node, 1)
 	chAddr := make(chan *peer.Addr)
 	crawler := &Crawler{sync.Mutex{}, nodes, chOut, chAddr}
 
@@ -28,7 +27,7 @@ func New(ip string, port int) (*Crawler, error) {
 	crawler.Add(addr)
 
 	go crawler.HandleResult()
-	go crawler.HandleAddr(1000)
+	go crawler.HandleAddr(500)
 
 	go crawler.StartMonitoring()
 
@@ -66,7 +65,11 @@ func (c *Crawler) Add(addr *peer.Addr) {
 		return
 	}
 
+	go Repeat(10, p.GetAddrNoError)
+
+	go Delay(60, p.Close)
 	c.add(addr.String())
+
 }
 
 func (c *Crawler) HandleResult() {
@@ -91,10 +94,7 @@ func (c *Crawler) HandleAddr(n int) {
 }
 
 func (c *Crawler) StartMonitoring() {
-	for {
-		time.Sleep(60 * time.Second)
-		c.Show()
-	}
+	go Repeat(10, c.Show)
 }
 
 func (c *Crawler) Show() {

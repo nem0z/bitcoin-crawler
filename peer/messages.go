@@ -66,6 +66,15 @@ func (peer *Peer) GetAddr() error {
 	return nil
 }
 
+func (peer *Peer) GetAddrNoError() {
+	msg, err := message.New("getaddr", []byte{})
+	if err != nil {
+		return
+	}
+
+	peer.Queue(msg)
+}
+
 func (peer *Peer) Mempool() error {
 	msg, err := message.New("mempool", []byte{})
 	if err != nil {
