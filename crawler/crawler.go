@@ -16,18 +16,18 @@ type Crawler struct {
 	addr  chan *peer.Addr
 }
 
-func New(ip string, port int) (*Crawler, error) {
+func New(addrs ...*peer.Addr) (*Crawler, error) {
 	nodes := map[string]*peer.Node{}
-	chOut := make(chan *peer.Node, 1)
+	chOut := make(chan *peer.Node)
 	chAddr := make(chan *peer.Addr)
 	crawler := &Crawler{sync.Mutex{}, nodes, chOut, chAddr}
 
-	addr := &peer.Addr{Ip: ip, Port: port}
-
-	crawler.Add(addr)
+	for _, addr := range addrs {
+		crawler.Add(addr)
+	}
 
 	go crawler.HandleResult()
-	go crawler.HandleAddr(500)
+	go crawler.HandleAddr(1000)
 
 	go crawler.StartMonitoring()
 
