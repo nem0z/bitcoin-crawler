@@ -113,15 +113,12 @@ func (peer *Peer) Queue(msg *message.Message) {
 }
 
 func (peer *Peer) ConsumeQueue() {
-
-	go func() {
-		for msg := range peer.queue {
-			err := peer.Send(msg)
-			if err != nil {
-				// log.Println("Consuming queue :", err)
-			}
+	for msg := range peer.queue {
+		err := peer.Send(msg)
+		if err != nil {
+			// log.Println("Consuming queue :", err)
 		}
-	}()
+	}
 }
 
 // Read a message from the conn

@@ -34,7 +34,6 @@ func (peer *Peer) Handle() {
 		if ok && msg.IsValid() {
 			// log.Println("Handle message :", message.ResolveCommandName(msg.Command))
 			go handler(peer, msg)
-			continue
 		}
 	}
 }
