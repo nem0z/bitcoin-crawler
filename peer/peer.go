@@ -11,14 +11,14 @@ import (
 )
 
 type Info struct {
-	Version  int32
-	Services uint64
-	Relay    bool
+	Version  int32  `json:"version"`
+	Services uint64 `json:"services"`
+	Relay    bool   `json:"relay"`
 }
 
 type Addr struct {
-	Ip   string
-	Port int
+	Ip   string `json:"ip"`
+	Port int    `json:"port"`
 }
 
 func (addr *Addr) String() string {

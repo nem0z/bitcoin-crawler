@@ -1,10 +1,12 @@
 package peer
 
-import "time"
+import (
+	"time"
+)
 
 type Node struct {
-	Timestamp time.Time
-	Info      *Info
-	Addr      *Addr
-	Ping      bool
+	Timestamp time.Time `json:"timestamp"`
+	Info      *Info     `json:"info"`
+	Addr      *Addr     `json:"addr"`
+	Ping      bool      `json:"ping"`
 }
