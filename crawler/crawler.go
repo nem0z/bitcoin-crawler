@@ -1,7 +1,12 @@
 package crawler
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 
 	chandlers "github.com/nem0z/bitcoin-crawler/crawler/handlers"
@@ -14,6 +19,38 @@ type Crawler struct {
 	nodes map[string]*peer.Node
 	out   chan *peer.Node
 	addr  chan *peer.Addr
+}
+
+func (c *Crawler) Export(path string) error {
+	json, err := json.MarshalIndent(c.nodes, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, json, 0644)
+}
+
+func (c *Crawler) Load(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	nodes := make(map[string]*peer.Node)
+	err = json.Unmarshal(data, &nodes)
+	if err != nil {
+		return err
+	}
+
+	for key := range nodes {
+		keyParts := strings.Split(key, ":")
+		port, err := strconv.Atoi(keyParts[1])
+		if err != nil {
+			continue
+		}
+		c.addr <- &peer.Addr{Ip: keyParts[0], Port: port}
+	}
+
+	return nil
 }
 
 func New(addrs ...*peer.Addr) (*Crawler, error) {
