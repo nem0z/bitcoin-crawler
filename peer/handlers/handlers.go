@@ -27,7 +27,7 @@ func Version() peer.Handler {
 
 func Verack() peer.Handler {
 	return func(p *peer.Peer, msg *message.Message) {
-		p.ConsumeQueue()
+		go p.ConsumeQueue()
 	}
 }
 

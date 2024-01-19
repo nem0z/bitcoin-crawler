@@ -1,36 +1,38 @@
 package main
 
 import (
-	"time"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/nem0z/bitcoin-crawler/crawler"
 	"github.com/nem0z/bitcoin-crawler/peer"
-	"github.com/nem0z/bitcoin-crawler/peer/handlers"
 	"github.com/nem0z/bitcoin-crawler/utils"
 )
 
-const peerIp = "2604:a880:4:1d0::3d:2000"
+const peerIp = "190.64.134.52"
 const peerPort = 8333
 
 func main() {
-	p, err := peer.New(peerIp, peerPort)
+	addr := &peer.Addr{Ip: peerIp, Port: peerPort}
+	crawler, err := crawler.New(addr)
 	utils.Handle(err)
 
-	handlers.DefaultRegister(p)
+	go crawler.Load("./export/nodes.json")
 
-	err = p.Version()
-	utils.Handle(err)
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
 
-	err = p.Verack()
-	utils.Handle(err)
+	go func() {
+		sig := <-signalCh
+		fmt.Printf("Received signal: %v\n", sig)
 
-	err = p.Ping()
-	utils.Handle(err)
+		err = crawler.Export("./export/nodes.json")
+		utils.Handle(err)
 
-	err = p.GetAddr()
-	utils.Handle(err)
+		os.Exit(0)
+	}()
 
-	for {
-		time.Sleep(3 * time.Second)
-		p.Display()
-	}
+	select {}
 }

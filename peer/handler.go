@@ -2,7 +2,6 @@ package peer
 
 import (
 	"io"
-	"log"
 
 	"github.com/nem0z/bitcoin-crawler/message"
 )
@@ -16,24 +15,25 @@ func (peer *Peer) Register(command string, handler Handler) {
 
 func (peer *Peer) Handle() {
 	for {
+		if peer.conn == nil {
+			return
+		}
+
 		msg, err := peer.Read()
 		if err == io.EOF {
 			continue
 		}
 
 		if err != nil {
-			log.Println("Handling messages :", err)
 			peer.Close()
-			break
+			return
 		}
 
 		command := message.ResolveCommandName(msg.Command)
 		handler, ok := peer.handlers[command]
 		if ok && msg.IsValid() {
+			// log.Println("Handle message :", message.ResolveCommandName(msg.Command))
 			go handler(peer, msg)
-			continue
 		}
-
-		log.Printf("Ignored message of type %s", string(msg.Command))
 	}
 }

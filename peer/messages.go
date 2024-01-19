@@ -39,6 +39,7 @@ func (peer *Peer) Ping() error {
 	}
 
 	peer.Queue(msg)
+
 	peer.PingAt = time.Now()
 	peer.PingNonce = nonce
 
@@ -63,6 +64,15 @@ func (peer *Peer) GetAddr() error {
 
 	peer.Queue(msg)
 	return nil
+}
+
+func (peer *Peer) GetAddrNoError() {
+	msg, err := message.New("getaddr", []byte{})
+	if err != nil {
+		return
+	}
+
+	peer.Queue(msg)
 }
 
 func (peer *Peer) Mempool() error {
