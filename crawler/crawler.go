@@ -155,5 +155,6 @@ func (c *Crawler) Show() {
 	fmt.Println("Node discovered :", cpt)
 	fmt.Println("Node processed :", cptProcessed)
 	fmt.Println("Node ok :", cptOk)
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 	fmt.Println()
 }
