@@ -3,6 +3,7 @@ package crawler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"runtime"
 	"strconv"
@@ -10,15 +11,43 @@ import (
 	"sync"
 
 	chandlers "github.com/nem0z/bitcoin-crawler/crawler/handlers"
+	"github.com/nem0z/bitcoin-crawler/database"
 	"github.com/nem0z/bitcoin-crawler/peer"
 	phandlers "github.com/nem0z/bitcoin-crawler/peer/handlers"
 )
 
 type Crawler struct {
-	mu    sync.Mutex
+	db    *database.DB
 	nodes map[string]*peer.Node
+	mu    sync.Mutex
 	out   chan *peer.Node
 	addr  chan *peer.Addr
+}
+
+func (c *Crawler) SaveDB() {
+	for _, node := range c.nodes {
+		if node == nil {
+			continue
+		}
+
+		err := c.db.Update(node)
+		if err != nil {
+			log.Printf("Saving node (%v) to DB : %v\n", node.Addr, err)
+		}
+	}
+}
+
+func (c *Crawler) LoadDB() error {
+	addrs, err := c.db.LoadAddrs(true)
+	if err != nil {
+		return err
+	}
+
+	for _, addr := range addrs {
+		c.addr <- addr
+	}
+
+	return nil
 }
 
 func (c *Crawler) Export(path string) error {
@@ -53,11 +82,11 @@ func (c *Crawler) Load(path string) error {
 	return nil
 }
 
-func New(addrs ...*peer.Addr) (*Crawler, error) {
+func New(db *database.DB, addrs ...*peer.Addr) (*Crawler, error) {
 	nodes := map[string]*peer.Node{}
 	chOut := make(chan *peer.Node)
 	chAddr := make(chan *peer.Addr)
-	crawler := &Crawler{sync.Mutex{}, nodes, chOut, chAddr}
+	crawler := &Crawler{db, nodes, sync.Mutex{}, chOut, chAddr}
 
 	for _, addr := range addrs {
 		crawler.Add(addr)

@@ -1,9 +1,9 @@
 package message
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"errors"
-
-	"github.com/nem0z/bitcoin-crawler/utils"
 )
 
 func formatCommandName(commandName string) ([]byte, error) {
@@ -25,8 +25,17 @@ func formatCommandName(commandName string) ([]byte, error) {
 	return formatedCommandName, nil
 }
 
+func RemoveTrailingZeros(data []byte) []byte {
+	for i := len(data) - 1; i >= 0; i-- {
+		if data[i] != 0 {
+			return data[:i+1]
+		}
+	}
+	return []byte{}
+}
+
 func ResolveCommandName(command []byte) string {
-	return string(utils.RemoveTrailingZeros(command))
+	return string(RemoveTrailingZeros(command))
 }
 
 func ReadVarInt(data []byte) (int64, []byte, error) {
@@ -48,4 +57,16 @@ func ReadVarInt(data []byte) (int64, []byte, error) {
 	}
 
 	return 0, nil, errors.New("ReadVarIntFromSlice: Incomplete varint in the slice")
+}
+
+func CreateNonce(size int) ([]byte, error) {
+	bytes := make([]byte, size)
+	_, err := rand.Read(bytes)
+	return bytes, err
+}
+
+func Checksum(data []byte) []byte {
+	hash := sha256.Sum256(data)
+	hash = sha256.Sum256(hash[:])
+	return hash[:4]
 }

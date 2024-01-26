@@ -5,7 +5,6 @@ import (
 
 	"github.com/nem0z/bitcoin-crawler/message"
 	"github.com/nem0z/bitcoin-crawler/message/payload"
-	"github.com/nem0z/bitcoin-crawler/utils"
 )
 
 func (peer *Peer) Version() error {
@@ -28,7 +27,7 @@ func (peer *Peer) Verack() error {
 }
 
 func (peer *Peer) Ping() error {
-	nonce, err := utils.CreateNonce(8)
+	nonce, err := message.CreateNonce(8)
 	if err != nil {
 		return err
 	}
