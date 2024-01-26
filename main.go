@@ -8,19 +8,15 @@ import (
 
 	"github.com/nem0z/bitcoin-crawler/crawler"
 	"github.com/nem0z/bitcoin-crawler/database"
-	"github.com/nem0z/bitcoin-crawler/peer"
 	"github.com/nem0z/bitcoin-crawler/utils"
 )
-
-const peerIp = "107.222.16.143"
-const peerPort = 8333
 
 func main() {
 	db, err := database.Init("./local.db")
 	utils.Handle(err)
 
-	addr := &peer.Addr{Ip: peerIp, Port: peerPort}
-	crawler, err := crawler.New(db, addr)
+	addrs, err := utils.LoadAddr("./peers.json")
+	crawler, err := crawler.New(db, addrs...)
 	utils.Handle(err)
 
 	go crawler.LoadDB()
