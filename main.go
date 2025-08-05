@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,7 +30,7 @@ func main() {
 		fmt.Printf("Received signal: %v\n", sig)
 
 		err = crawler.Export("./export/nodes.json")
-		utils.Handle(err)
+		log.Println("error exporting nodes.json", err)
 
 		crawler.SaveDB()
 
