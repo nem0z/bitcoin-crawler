@@ -17,6 +17,8 @@ func main() {
 	utils.Handle(err)
 
 	addrs, err := utils.LoadAddr("./peers.json")
+	utils.Handle(err)
+
 	crawler, err := crawler.New(db, addrs...)
 	utils.Handle(err)
 
@@ -29,8 +31,9 @@ func main() {
 		sig := <-signalCh
 		fmt.Printf("Received signal: %v\n", sig)
 
-		err = crawler.Export("./export/nodes.json")
-		log.Println("error exporting nodes.json", err)
+		if err := crawler.Export("./export/nodes.json"); err != nil {
+			log.Println("error exporting nodes.json", err)
+		}
 
 		crawler.SaveDB()
 
