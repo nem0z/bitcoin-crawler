@@ -10,10 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	chandlers "github.com/nem0z/bitcoin-crawler/crawler/handlers"
+	cHandlers "github.com/nem0z/bitcoin-crawler/crawler/handlers"
 	"github.com/nem0z/bitcoin-crawler/database"
 	"github.com/nem0z/bitcoin-crawler/peer"
-	phandlers "github.com/nem0z/bitcoin-crawler/peer/handlers"
+	pHandlers "github.com/nem0z/bitcoin-crawler/peer/handlers"
 )
 
 type Crawler struct {
@@ -123,8 +123,8 @@ func (c *Crawler) Add(addr *peer.Addr) {
 	if err != nil {
 		return
 	}
-	phandlers.DefaultRegister(p)
-	p.Register("addr", chandlers.Addr(c.addr))
+	pHandlers.DefaultRegister(p)
+	p.Register("addr", cHandlers.Addr(c.addr))
 
 	err = p.Start()
 	if err != nil {
