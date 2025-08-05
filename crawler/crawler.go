@@ -119,7 +119,7 @@ func (c *Crawler) Add(addr *peer.Addr) {
 		return
 	}
 
-	p, err := peer.New(addr.Ip, addr.Port, c.out)
+	p, err := peer.New(addr, c.out)
 	if err != nil {
 		return
 	}

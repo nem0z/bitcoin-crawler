@@ -50,8 +50,8 @@ func Ping() peer.Handler {
 
 func Pong() peer.Handler {
 	return func(p *peer.Peer, msg *message.Message) {
-		if bytes.Equal(msg.Payload, p.PingNonce) {
-			p.PongAt = time.Now()
+		if bytes.Equal(msg.Payload, p.PingInfo.PingNonce) {
+			p.PingInfo.PongAt = time.Now()
 		}
 	}
 }

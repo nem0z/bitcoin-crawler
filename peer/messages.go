@@ -8,7 +8,11 @@ import (
 )
 
 func (peer *Peer) Version() error {
-	payload, err := payload.NewVersion(peer.ip, peer.port)
+	payload, err := payload.NewVersion(peer.addr.Ip, peer.addr.Port)
+	if err != nil {
+		return err
+	}
+
 	msg, err := message.New("version", payload.ToByte())
 	if err != nil {
 		return err
@@ -39,8 +43,8 @@ func (peer *Peer) Ping() error {
 
 	peer.Queue(msg)
 
-	peer.PingAt = time.Now()
-	peer.PingNonce = nonce
+	peer.PingInfo.PingAt = time.Now()
+	peer.PingInfo.PingNonce = nonce
 
 	return nil
 }

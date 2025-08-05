@@ -11,9 +11,16 @@ import (
 )
 
 type Info struct {
-	Version  int32  `json:"version"`
-	Services uint64 `json:"services"`
-	Relay    bool   `json:"relay"`
+	Version  int32   `json:"version"`
+	Services uint64  `json:"services"`
+	Relay    bool    `json:"relay"`
+	Addrs    []*Addr `json:"addrs"`
+}
+
+type PingInfo struct {
+	PingNonce []byte
+	PingAt    time.Time
+	PongAt    time.Time
 }
 
 type Addr struct {
@@ -26,21 +33,36 @@ func (addr *Addr) String() string {
 }
 
 type Peer struct {
+	addr     *Addr
+	conn     net.Conn
+	ctx      context.Context
+	cancel   context.CancelFunc
+	handlers Handlers
+	queue    chan *message.Message
+	onClose  chan *Node
+	Info     *Info
+	PingInfo *PingInfo
+}
+
+func (p *Peer) Addr() string {
+	return p.addr.String()
+}
+
 // Done will block the goroutine calling this function until the peer ctx timeout or get canceled
 func (p *Peer) Done() {
 	<-p.ctx.Done()
 }
 
 // Create the net.coon with the peer
-func New(ip string, port int, onClose chan *Node) (*Peer, error) {
+func New(addr *Addr, onClose chan *Node) (*Peer, error) {
 	var err error
 	var conn net.Conn
 
-	netIp := net.ParseIP(ip)
+	netIp := net.ParseIP(addr.Ip)
 	if netIp.To4() == nil {
-		conn, err = net.DialTimeout("tcp6", fmt.Sprintf("[%v]:%v", ip, port), time.Second*3)
+		conn, err = net.DialTimeout("tcp6", fmt.Sprintf("[%v]:%v", addr.Ip, addr.Port), time.Second*3)
 	} else {
-		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", ip, port), time.Second*3)
+		conn, err = net.DialTimeout("tcp", fmt.Sprintf("%v:%v", addr.Ip, addr.Port), time.Second*3)
 	}
 
 	if err != nil {
@@ -50,7 +72,13 @@ func New(ip string, port int, onClose chan *Node) (*Peer, error) {
 	queue := make(chan *message.Message, 100)
 
 	return &Peer{
-		ip: ip, port: port, conn: conn, handlers: Handlers{}, queue: queue, onClose: onClose,
+		addr: addr,
+		conn: conn, handlers: Handlers{},
+		ctx:      context.Background(),
+		queue:    queue,
+		onClose:  onClose,
+		Info:     &Info{},
+		PingInfo: &PingInfo{},
 	}, nil
 }
 
