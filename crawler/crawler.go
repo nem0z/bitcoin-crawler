@@ -132,11 +132,8 @@ func (c *Crawler) Add(addr *peer.Addr) {
 		return
 	}
 
-	go Repeat(10, p.GetAddrNoError)
-
-	go Delay(60, p.Close)
-	c.add(addr.String())
-
+	c.add(p.Addr())
+	p.Done()
 }
 
 func (c *Crawler) HandleResult() {

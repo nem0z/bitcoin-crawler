@@ -26,17 +26,9 @@ func (addr *Addr) String() string {
 }
 
 type Peer struct {
-	ip        string
-	port      int
-	conn      net.Conn
-	handlers  Handlers
-	Info      *Info
-	Addrs     []*Addr
-	PingNonce []byte
-	PingAt    time.Time
-	PongAt    time.Time
-	queue     chan *message.Message
-	onClose   chan *Node
+// Done will block the goroutine calling this function until the peer ctx timeout or get canceled
+func (p *Peer) Done() {
+	<-p.ctx.Done()
 }
 
 // Create the net.coon with the peer
