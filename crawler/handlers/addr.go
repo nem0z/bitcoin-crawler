@@ -18,5 +18,7 @@ func Addr(ch chan *peer.Addr) peer.Handler {
 				ch <- &peer.Addr{Ip: addr.Ip, Port: int(addr.Port)}
 			}
 		}
+
+		p.Close()
 	}
 }

@@ -1,6 +1,7 @@
 package peer
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -83,6 +84,15 @@ func New(addr *Addr, onClose chan *Node) (*Peer, error) {
 }
 
 func (peer *Peer) Start() error {
+	ctx, cancel := context.WithTimeout(peer.ctx, time.Second*30)
+	peer.ctx = ctx
+	peer.cancel = cancel
+
+	go func() {
+		<-ctx.Done()
+		peer.Close()
+	}()
+
 	err := peer.Version()
 	if err != nil {
 		return err
@@ -134,9 +144,14 @@ func (peer *Peer) Queue(msg *message.Message) {
 
 func (peer *Peer) ConsumeQueue() {
 	for msg := range peer.queue {
-		err := peer.Send(msg)
-		if err != nil {
-			// log.Println("Consuming queue :", err)
+		select {
+		case <-peer.ctx.Done():
+			return
+		default:
+			err := peer.Send(msg)
+			if err != nil {
+				// log.Println("Consuming queue :", err)
+			}
 		}
 	}
 }
@@ -186,19 +201,15 @@ func (peer *Peer) Read() (*message.Message, error) {
 
 func (peer *Peer) Display() {
 	fmt.Println("/-----*-----/")
-	fmt.Printf("Peer : %v:%v\n", peer.ip, peer.port)
+	fmt.Printf("Peer : %v:%v\n", peer.addr.Ip, peer.addr.Port)
 	fmt.Printf("Info : %v : %v : %v\n", peer.Info.Version, peer.Info.Services, peer.Info.Relay)
-	fmt.Println("Addrs : ", len(peer.Addrs))
-	fmt.Printf("Ping/Pong : %v => %v\n", peer.PingAt, peer.PongAt)
+	fmt.Println("Addrs : ", len(peer.Info.Addrs))
+	fmt.Printf("Ping/Pong : %v => %v\n", peer.PingInfo.PingAt, peer.PingInfo.PongAt)
 	fmt.Printf("/-----*-----/\n\n")
 }
 
-func (peer *Peer) Addr() *Addr {
-	return &Addr{peer.ip, peer.port}
-}
-
 func (peer *Peer) Close() {
-	// log.Printf("[%s] Closing connection...\n", peer.Addr())
+	peer.cancel()
 	if peer.conn == nil {
 		return
 	}
@@ -206,8 +217,8 @@ func (peer *Peer) Close() {
 	node := &Node{
 		time.Now(),
 		peer.Info,
-		peer.Addr(),
-		peer.PongAt.Sub(peer.PingAt) > 0,
+		peer.addr,
+		peer.PingInfo.PongAt.Sub(peer.PingInfo.PingAt) > 0,
 	}
 
 	peer.onClose <- node

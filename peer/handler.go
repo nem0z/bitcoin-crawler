@@ -15,25 +15,32 @@ func (peer *Peer) Register(command string, handler Handler) {
 
 func (peer *Peer) Handle() {
 	for {
-		if peer.conn == nil {
+		select {
+		case <-peer.ctx.Done():
 			return
-		}
 
-		msg, err := peer.Read()
-		if err == io.EOF {
-			continue
-		}
+		default:
+			if peer.conn == nil {
+				peer.Close()
+				return
+			}
 
-		if err != nil {
-			peer.Close()
-			return
-		}
+			msg, err := peer.Read()
+			if err == io.EOF {
+				continue
+			}
 
-		command := message.ResolveCommandName(msg.Command)
-		handler, ok := peer.handlers[command]
-		if ok && msg.IsValid() {
-			// log.Println("Handle message :", message.ResolveCommandName(msg.Command))
-			go handler(peer, msg)
+			if err != nil {
+				peer.Close()
+				return
+			}
+
+			command := message.ResolveCommandName(msg.Command)
+			handler, ok := peer.handlers[command]
+			if ok && msg.IsValid() {
+				// log.Println("Handle message :", message.ResolveCommandName(msg.Command))
+				go handler(peer, msg)
+			}
 		}
 	}
 }
