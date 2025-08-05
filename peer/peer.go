@@ -110,7 +110,7 @@ func (peer *Peer) Start() error {
 // Send a message to the peer
 func (peer *Peer) Send(msg *message.Message) error {
 	if !msg.IsValid() {
-		return errors.New("Trying to send an invalid message")
+		return errors.New("trying to send an invalid message")
 	}
 
 	msgData := msg.MarshalMessage()
@@ -121,7 +121,7 @@ func (peer *Peer) Send(msg *message.Message) error {
 	}
 
 	if n != len(msgData) {
-		return errors.New("Wrong number of bytes sent")
+		return errors.New("wrong number of bytes sent")
 	}
 
 	// log.Println("Send message :", string(msg.Command))
