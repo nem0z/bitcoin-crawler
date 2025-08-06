@@ -129,6 +129,7 @@ func (c *Crawler) Add(addr *peer.Addr) {
 	err = p.Start()
 	if err != nil {
 		log.Printf("starting node %v, failed: %v", p.Addr(), err)
+		p.Close()
 		return
 	}
 
