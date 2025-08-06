@@ -30,14 +30,13 @@ func (peer *Peer) Handle() {
 				continue
 			}
 
-			if err != nil {
+			if err != nil || !msg.IsValid() {
 				peer.Close()
 				return
 			}
 
 			command := message.ResolveCommandName(msg.Command)
-			handler, ok := peer.handlers[command]
-			if ok && msg.IsValid() {
+			if handler, ok := peer.handlers[command]; ok {
 				// log.Println("Handle message :", message.ResolveCommandName(msg.Command))
 				go handler(peer, msg)
 			}
