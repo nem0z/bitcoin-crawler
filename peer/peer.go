@@ -93,23 +93,19 @@ func (peer *Peer) Start() error {
 		peer.Close()
 	}()
 
-	err := peer.Version()
-	if err != nil {
+	if err := peer.Version(); err != nil {
 		return err
 	}
 
-	err = peer.Verack()
-	if err != nil {
+	if err := peer.Verack(); err != nil {
 		return err
 	}
 
-	err = peer.Ping()
-	if err != nil {
+	if err := peer.Ping(); err != nil {
 		return err
 	}
 
-	err = peer.GetAddr()
-	if err != nil {
+	if err := peer.GetAddr(); err != nil {
 		return err
 	}
 
