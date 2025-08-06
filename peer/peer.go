@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"time"
 
@@ -87,11 +88,6 @@ func (peer *Peer) Start() error {
 	ctx, cancel := context.WithTimeout(peer.ctx, time.Minute)
 	peer.ctx = ctx
 	peer.cancel = cancel
-
-	go func() {
-		<-ctx.Done()
-		peer.Close()
-	}()
 
 	if err := peer.Version(); err != nil {
 		return err
@@ -205,9 +201,6 @@ func (peer *Peer) Display() {
 
 func (peer *Peer) Close() {
 	peer.cancel()
-	if peer.conn == nil {
-		return
-	}
 
 	node := &Node{
 		time.Now(),
@@ -218,5 +211,7 @@ func (peer *Peer) Close() {
 
 	peer.onClose <- node
 
-	peer.conn.Close()
+	if peer.conn != nil {
+		peer.conn.Close()
+	}
 }
