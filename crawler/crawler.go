@@ -95,7 +95,7 @@ func New(db *database.DB, addrs ...*peer.Addr) (*Crawler, error) {
 	}
 
 	go crawler.HandleResult()
-	go crawler.HandleAddr(1000)
+	go crawler.HandleAddr(50)
 
 	go crawler.StartMonitoring()
 
