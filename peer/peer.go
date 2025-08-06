@@ -139,14 +139,13 @@ func (peer *Peer) Queue(msg *message.Message) {
 }
 
 func (peer *Peer) ConsumeQueue() {
-	for msg := range peer.queue {
+	for {
 		select {
 		case <-peer.ctx.Done():
 			return
-		default:
-			err := peer.Send(msg)
-			if err != nil {
-				// log.Println("Consuming queue :", err)
+		case msg := <-peer.queue:
+			if err := peer.Send(msg); err != nil {
+				log.Println("Consuming queue :", err)
 			}
 		}
 	}
