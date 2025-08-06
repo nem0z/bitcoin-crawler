@@ -40,9 +40,11 @@ func (c *Crawler) SaveDB() {
 func (c *Crawler) LoadDB() error {
 	addrs, err := c.db.LoadAddrs(true)
 	if err != nil {
+		log.Println("error loading peers from DB:", err)
 		return err
 	}
 
+	log.Printf("Loading %v addrs\n", len(addrs))
 	for _, addr := range addrs {
 		c.addr <- addr
 	}
