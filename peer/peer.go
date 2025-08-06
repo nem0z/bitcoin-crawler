@@ -84,7 +84,7 @@ func New(addr *Addr, onClose chan *Node) (*Peer, error) {
 }
 
 func (peer *Peer) Start() error {
-	ctx, cancel := context.WithTimeout(peer.ctx, time.Second*30)
+	ctx, cancel := context.WithTimeout(peer.ctx, time.Minute)
 	peer.ctx = ctx
 	peer.cancel = cancel
 
