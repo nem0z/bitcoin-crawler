@@ -19,7 +19,7 @@ import (
 type Crawler struct {
 	db    *database.DB
 	nodes map[string]*peer.Node
-	mu    sync.Mutex
+	mu    sync.RWMutex
 	out   chan *peer.Node
 	addr  chan *peer.Addr
 }
@@ -88,14 +88,14 @@ func New(db *database.DB, addrs ...*peer.Addr) (*Crawler, error) {
 	nodes := map[string]*peer.Node{}
 	chOut := make(chan *peer.Node)
 	chAddr := make(chan *peer.Addr)
-	crawler := &Crawler{db, nodes, sync.Mutex{}, chOut, chAddr}
+	crawler := &Crawler{db, nodes, sync.RWMutex{}, chOut, chAddr}
 
 	for _, addr := range addrs {
 		crawler.Add(addr)
 	}
 
 	go crawler.HandleResult()
-	go crawler.HandleAddr(50)
+	go crawler.HandleAddr(10)
 
 	go crawler.StartMonitoring()
 
@@ -109,8 +109,8 @@ func (c *Crawler) add(addr string) {
 }
 
 func (c *Crawler) Exist(addr string) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	_, ok := c.nodes[addr]
 	return ok
@@ -123,6 +123,8 @@ func (c *Crawler) Add(addr *peer.Addr) {
 
 	p, err := peer.New(addr, c.out)
 	if err != nil {
+		//log.Println("error creating peer:", err)
+		fmt.Printf(".")
 		return
 	}
 	pHandlers.DefaultRegister(p)
@@ -165,8 +167,8 @@ func (c *Crawler) StartMonitoring() {
 }
 
 func (c *Crawler) Show() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	cpt := len(c.nodes)
 	cptProcessed := 0
